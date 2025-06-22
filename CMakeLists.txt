@@ -10,6 +10,30 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 
+include_directories(
+  include/
+)
+
+include_directories(
+  ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+
+add_executable(pcon_rcp_node
+  src/main.cpp
+  src/pcon_driver.cpp
+)
+
+ament_target_dependencies(pcon_rcp_node
+  rclcpp
+  std_msgs
+)
+
+install(TARGETS
+  pcon_rcp_node
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   # the following line skips the linter which checks for copyrights
