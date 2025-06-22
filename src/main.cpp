@@ -10,8 +10,20 @@ int main(int argc, char** argv) {
     if (driver.openPort(port, baudRate)) {
         std::cout << "Port opened successfully." << std::endl;
         
-        // Perform operations with the driver...
+        char query_message[256];
+        int response_size = 0;
+        driver.createReadRegisterMessage(query_message, response_size);
 
+        char response[256];
+        if (driver.sendMessage(query_message, sizeof(query_message), response, sizeof(response))) {
+            PconStatus status;
+            driver.parseMessage(response, response_size, status);
+            std::cout << "Current Position: " << status.current_position << std::endl;
+            std::cout << "Current Speed: " << status.current_speed << std::endl;
+            // Print other status fields as needed
+        } else {
+            std::cerr << "Failed to send message or receive response." << std::endl;
+        }
         driver.closePort();
         std::cout << "Port closed." << std::endl;
     } else {
