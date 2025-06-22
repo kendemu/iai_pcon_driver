@@ -14,8 +14,19 @@ int main(int argc, char** argv) {
         int response_size = 0;
         driver.createReadRegisterMessage(query_message, response_size);
 
+        std::cout << "Query message created with response size: " << response_size << std::endl;
+
         char response[256];
-        if (driver.sendMessage(query_message, sizeof(query_message), response, sizeof(response))) {
+
+        std::cout << "Sending query message..." << std::endl;
+        /*
+        for (int i = 0; i < 8; ++i) {
+            std::cout << "0x" << std::hex << static_cast<int>(query_message[i]) << " ";
+        }
+        std::cout << std::endl;
+        */
+
+        if (driver.sendMessage(query_message, 8, response, response_size)) {
             PconStatus status;
             driver.parseMessage(response, response_size, status);
             std::cout << "Current Position: " << status.current_position << std::endl;

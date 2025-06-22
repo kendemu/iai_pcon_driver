@@ -23,6 +23,7 @@ bool PconDriver::openPort(std::string port, int baud){
     if (ioctl(fd, TIOCSSERIAL, &serial_settings) < 0)
         return false; // Failed to set serial settings
 
+    baudRate = baud;
     speed_t baud_rate = calculateBaudRate(baud);
     struct termios options;
 
@@ -124,18 +125,20 @@ void PconDriver::createReadRegisterMessage(char* message, int& response_size) {
     const uint8_t NUM_OF_REGISTERS = 16; // Number of registers to read
     const int MESSAGE_SIZE = 8; // 1 byte for slave address, 1 byte for function code, 2 bytes for starting address, 2 bytes for number of registers, and 2 bytes for CRC
 
+
     message[0] = 0x01; // Slave address
     message[1] = FunctionCode::READ; // Function code
-    message[2] = 0x00; // Starting address high byte
-    message[3] = 0x90; // Starting address low byte (0x9000)
+    message[2] = 0x90; // Starting address high byte
+    message[3] = 0x00; // Starting address low byte (0x9000)
     message[4] = 0x00; // Number of registers high byte
     message[5] = NUM_OF_REGISTERS; // Number of registers low byte (16 registers)
     
     unsigned short crc = calculateCRC(message, MESSAGE_SIZE -2);
-    message[6] = (crc & 0xFF00) >> 8;
-    message[7] = crc & 0x00FF;
-
+    message[7] = (crc & 0xFF00) >> 8;
+    message[6] = crc & 0x00FF;
+    
     response_size = NUM_OF_REGISTERS * 2 + 5; // 2 bytes per register + 5 bytes for header and CRC
+    std::cout << "Response size: " << response_size << std::endl;
 }
 
 bool PconDriver::sendMessage(char* message, int message_size, char* response, int response_size) {
@@ -150,6 +153,9 @@ bool PconDriver::sendMessage(char* message, int message_size, char* response, in
 
             if (crc == received_crc) {
                 return true; // Message sent and response received successfully
+            }
+            else{
+                std::cerr << "CRC mismatch: calculated " << crc << ", received " << received_crc << std::endl;
             }
         }
         usleep(MIN_TRANSMIT_DELAY_MS * 1000); // Delay before retrying
@@ -181,6 +187,10 @@ int PconDriver::transmitMessage(char* message, int message_size, char* response,
         {
             rcvSize = read(response + rcvCnt, response_size - rcvCnt);
             rcvCnt += rcvSize;
+            
+            std::cout << "Required : " << response_size << ", received: " << rcvCnt << std::endl;
+            //std::cout << "Received " << rcvSize << " bytes, total: " << rcvCnt << std::endl;
+
 
             endTime = getCurrentTime();
             diffNs = endTime - startTime;

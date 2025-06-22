@@ -67,11 +67,12 @@ constexpr int NINE_POSITION_DATA_IO_MS = 98;
 constexpr int SAFETY_FACTOR_DELAY = 3;
 
 constexpr int ENCODER_PULSE_PER_REV = 8192;
+constexpr int REGISTER_START_ADDRESS = 0x90;
 
 
 enum FunctionCode {
-    READ = 0x01,
-    WRITE = 0x03,
+    READ = 0x03,
+    WRITE = 0x05,
     WRITE_DIRECT = 0x06,
     WRITE_MULTIPLE = 0x10
 };
