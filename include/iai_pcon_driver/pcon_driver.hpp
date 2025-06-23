@@ -1,14 +1,18 @@
 #pragma once
 
 #include <cstring>
-#include <fcntl.h>
-#include <iostream>
-#include <linux/serial.h>
-#include <string>
-#include <sys/ioctl.h>
 #include <termios.h>
-#include <time.h>
 #include <unistd.h>
+#include <sys/ioctl.h>
+#include <sys/time.h>
+#include <fcntl.h>
+#include <linux/serial.h>
+#include <iostream>
+#include <vector>
+#include <string>
+#include <cstring> // For bzero, strerror
+#include <iomanip> // For std::setw, std::setfill
+
 
 // CRC-16/Modbus table
 static const uint8_t auchCRCHi[] = {
@@ -67,7 +71,12 @@ constexpr int NINE_POSITION_DATA_IO_MS = 98;
 constexpr int SAFETY_FACTOR_DELAY = 3;
 
 constexpr int ENCODER_PULSE_PER_REV = 8192;
-constexpr int REGISTER_START_ADDRESS = 0x90;
+constexpr uint8_t SLAVE_ADDR = 0x01;
+constexpr uint16_t REGISTER_START_ADDRESS = 0x9000;
+constexpr uint16_t SERVO_TOGGLE_COMMAND = 0x0403;
+constexpr uint16_t ALARM_RESET_COMMAND = 0x0407;
+constexpr uint16_t GO_HOME_COMMAND = 0x040B;
+constexpr int MOTOR_MOVE_RESPONSE_SIZE = 8;
 
 
 enum FunctionCode {
@@ -76,6 +85,40 @@ enum FunctionCode {
     WRITE_DIRECT = 0x06,
     WRITE_MULTIPLE = 0x10
 };
+
+
+constexpr uint16_t DEVICE_STATUS_IS_LOAD_CELL_CALIB = 0x02;
+constexpr uint16_t DEVICE_STATUS_IS_LOAD_CELL_CALIB_DONE = 0x04;
+constexpr uint16_t DEVICE_STATUS_IS_POSITION_SET = 0x08;
+constexpr uint16_t DEVICE_STATUS_IS_HOME_POSE = 0x10;
+constexpr uint16_t DEVICE_STATUS_IS_PAUSE = 0x20;
+constexpr uint16_t DEVICE_STATUS_BRKL = 0x80;
+constexpr uint16_t DEVICE_STATUS_ABS_ERR = 0x100;
+constexpr uint16_t DEVICE_STATUS_LIGHT_ERR = 0x200;
+constexpr uint16_t DEVICE_STATUS_HEAVY_ERR = 0x400;
+constexpr uint16_t DEVICE_STATUS_IS_PRESS_NOT_CONTACTED = 0x800;
+constexpr uint16_t DEVICE_STATUS_IS_SERVO_ONN = 0x1000;
+constexpr uint16_t DEVICE_STATUS_IS_CONTROLLER_READY = 0x2000;
+constexpr uint16_t DEVICE_STATUS_IS_SAFETY_ACTIVATED = 0x4000;
+constexpr uint16_t DEVICE_STATUS_IS_EMERGENCY = 0x8000;
+
+struct DeviceStatus{
+  bool is_load_cell_calibrated;
+  bool is_load_cell_calib_command_done;
+  bool is_position_set;
+  bool is_home_pose;
+  bool is_pause;
+  bool is_break;
+  bool is_abs_encoder_err;
+  bool is_light_err;
+  bool is_heavy_err;
+  bool is_press_not_contacted;
+  bool is_servo_on;
+  bool is_controller_ready;
+  bool is_safety_activated;
+  bool is_emergency;
+};
+
 
 struct PconStatus{
   float current_position; // address 0x9000, 0x9001
@@ -87,26 +130,33 @@ struct PconStatus{
   uint16_t extended_device_status; // address 0x9007
   uint32_t system_status; // address 0x9008, 0x9009
   float current_speed; // address 0x900A, 0x900B
-  float current; // address 0x900C, 0x900D
-  int32_t current_difference; // address 0x900E, 0x900F
+  float current_load; // address 0x900C, 0x900D
+  int32_t encoder_difference; // address 0x900E, 0x900F
 };
 
 
 class PconDriver{
     public:
-      bool openPort(std::string port, int baud);
+      bool openPort(const std::string& port, int baud);
       void closePort();
 
-      int transmitMessage(char* message, int message_size, char* response, int response_size);
-      bool sendMessage(char* message, int message_size, char* response, int response_size);
-      void createReadRegisterMessage(char* message, int& response_size);
-      void parseMessage(char* response, int response_size, PconStatus& status);
-      unsigned short calculateCRC(const char* data, size_t size);
+      int transmitMessage(const std::vector<uint8_t>& message, std::vector<uint8_t>& response, int response_size);
+      bool sendMessage(const std::vector<uint8_t>& message, std::vector<uint8_t>& response, int response_size);
+      std::vector<uint8_t> createReadRegisterMessage(int& response_size);
+      std::vector<uint8_t> createDisableAlarmMessage();
+      std::vector<uint8_t> createResetAlarmMessage();
+      std::vector<uint8_t> createServoOnMessage();
+      std::vector<uint8_t> createServoOffMessage();
+      std::vector<uint8_t> createGoHomeMessage();
+      std::vector<uint8_t> createMotorMoveMessage(float pos_mm, float step_pos_mm, float speed_mm_s, float acc_g);
+
+      void parseMessage(const std::vector<uint8_t>& response, PconStatus& status);
+      unsigned short calculateCRC(const std::vector<uint8_t>& data, size_t size) const;
       
     private:
       
-      void write(const char* data, size_t size);
-      bool read(char* data, size_t size);
+      void writePort(const std::vector<uint8_t>& data);
+      ssize_t readPort(uint8_t* buffer, size_t size);
       int fd;
       int baudRate;
 
