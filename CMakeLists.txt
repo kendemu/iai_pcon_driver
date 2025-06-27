@@ -9,6 +9,7 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
 
 include_directories(
   include/
@@ -23,9 +24,20 @@ add_executable(pcon_rcp_node
   src/pcon_driver.cpp
 )
 
+add_executable(pcon_ros_node
+  src/pcon_node.cpp
+  src/pcon_driver.cpp
+)
+
 ament_target_dependencies(pcon_rcp_node
   rclcpp
   std_msgs
+)
+
+ament_target_dependencies(pcon_ros_node
+  rclcpp
+  std_msgs
+  sensor_msgs
 )
 
 install(TARGETS
@@ -33,6 +45,10 @@ install(TARGETS
   DESTINATION lib/${PROJECT_NAME}
 )
 
+install(TARGETS
+  pcon_ros_node
+  DESTINATION lib/${PROJECT_NAME}
+)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

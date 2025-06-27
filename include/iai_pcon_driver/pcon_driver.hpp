@@ -86,6 +86,20 @@ enum FunctionCode {
     WRITE_MULTIPLE = 0x10
 };
 
+constexpr uint8_t ALARM_COLLISION = 0xDF;
+constexpr uint8_t ALARM_SOFTWARE_RESET_SERVO_ON = 0x90;
+constexpr uint8_t ALARM_TEACH_POSITION_ERROR = 0x91;
+constexpr uint8_t ALARM_PWRT_SIGNAL_WHILE_MOVE = 0x92;
+constexpr uint8_t ALARM_PWRT_SIGNAL_WHILE_NOT_HOME = 0x93;
+constexpr uint8_t ALARM_DCLR_SIGNAL_WHILE_MOVE = 0x95;
+constexpr uint8_t ALARM_SERVO_ON_AFTER_ENCODER_FRAM_RW = 0x9C;
+constexpr uint8_t ALARM_MOVE_WHILE_SERVO_OFF = 0x80;
+constexpr uint8_t ALARM_POSITION_COMMAND_WHILE_NOT_HOME = 0x82;
+constexpr uint8_t ALARM_ABSOLUTE_POSITION_WHILE_NOT_HOME = 0x83;
+constexpr uint8_t ALARM_MOVE_WHILE_GO_HOME = 0x84;
+constexpr uint8_t ALARM_POSITION_ERROR_WHILE_MOVING = 0x85;
+
+
 
 constexpr uint16_t DEVICE_STATUS_IS_LOAD_CELL_CALIB = 0x02;
 constexpr uint16_t DEVICE_STATUS_IS_LOAD_CELL_CALIB_DONE = 0x04;
@@ -97,7 +111,7 @@ constexpr uint16_t DEVICE_STATUS_ABS_ERR = 0x100;
 constexpr uint16_t DEVICE_STATUS_LIGHT_ERR = 0x200;
 constexpr uint16_t DEVICE_STATUS_HEAVY_ERR = 0x400;
 constexpr uint16_t DEVICE_STATUS_IS_PRESS_NOT_CONTACTED = 0x800;
-constexpr uint16_t DEVICE_STATUS_IS_SERVO_ONN = 0x1000;
+constexpr uint16_t DEVICE_STATUS_IS_SERVO_ON = 0x1000;
 constexpr uint16_t DEVICE_STATUS_IS_CONTROLLER_READY = 0x2000;
 constexpr uint16_t DEVICE_STATUS_IS_SAFETY_ACTIVATED = 0x4000;
 constexpr uint16_t DEVICE_STATUS_IS_EMERGENCY = 0x8000;
@@ -149,7 +163,7 @@ class PconDriver{
       std::vector<uint8_t> createServoOffMessage();
       std::vector<uint8_t> createGoHomeMessage();
       std::vector<uint8_t> createMotorMoveMessage(float pos_mm, float step_pos_mm, float speed_mm_s, float acc_g);
-
+      DeviceStatus parseDeviceStatusOne(uint16_t device_status_one);
       void parseMessage(const std::vector<uint8_t>& response, PconStatus& status);
       unsigned short calculateCRC(const std::vector<uint8_t>& data, size_t size) const;
       

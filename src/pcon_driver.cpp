@@ -52,6 +52,27 @@ void PconDriver::closePort() {
     }
 }
 
+DeviceStatus PconDriver::parseDeviceStatusOne(uint16_t device_status_one){
+    DeviceStatus status;
+    status.is_load_cell_calibrated = (device_status_one & DEVICE_STATUS_IS_LOAD_CELL_CALIB) != 0;
+    status.is_load_cell_calib_command_done = (device_status_one & DEVICE_STATUS_IS_LOAD_CELL_CALIB_DONE) != 0;
+    status.is_position_set = (device_status_one & DEVICE_STATUS_IS_POSITION_SET) != 0;
+    status.is_home_pose = (device_status_one & DEVICE_STATUS_IS_HOME_POSE) != 0;
+    status.is_pause = (device_status_one & DEVICE_STATUS_IS_PAUSE) != 0;
+    status.is_break = (device_status_one & DEVICE_STATUS_BRKL) != 0;
+    status.is_abs_encoder_err = (device_status_one & DEVICE_STATUS_ABS_ERR) != 0;
+    status.is_light_err = (device_status_one & DEVICE_STATUS_LIGHT_ERR) != 0;
+    status.is_heavy_err = (device_status_one & DEVICE_STATUS_HEAVY_ERR) != 0;
+    status.is_press_not_contacted = (device_status_one & DEVICE_STATUS_IS_PRESS_NOT_CONTACTED) != 0;
+    status.is_servo_on = (device_status_one & DEVICE_STATUS_IS_SERVO_ON) != 0;
+    status.is_controller_ready = (device_status_one & DEVICE_STATUS_IS_CONTROLLER_READY) != 0;
+    status.is_safety_activated = (device_status_one & DEVICE_STATUS_IS_SAFETY_ACTIVATED) != 0;
+    status.is_emergency = (device_status_one & DEVICE_STATUS_IS_EMERGENCY) != 0;
+
+    return status;
+}
+
+
 speed_t PconDriver::calculateBaudRate(int baud) {
     switch (baud) {
         case 9600: return B9600;
@@ -121,12 +142,13 @@ std::vector<uint8_t> PconDriver::createReadRegisterMessage(int& response_size) {
     message[7] = (crc & 0xFF00) >> 8; // CRC MSB
 
     // Debug print with proper formatting
+    /*
     std::cout << "Generated message: ";
     for(uint8_t byte : message) {
         std::cout << "0x" << std::setw(2) << std::setfill('0') << std::hex << static_cast<int>(byte) << " ";
     }
     std::cout << std::dec << std::endl; // Reset iostream to decimal
-    
+    */
     response_size = NUM_OF_REGISTERS * 2 + 5; // Expected response: 2 bytes/reg + addr, func, byte count, 2x crc
     return message;
 }

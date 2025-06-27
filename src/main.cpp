@@ -5,7 +5,7 @@ int main(int argc, char** argv) {
 
     // Example usage: Open a port with a specific baud rate
     std::string port = "/dev/ttyUSB0"; // Replace with your actual port
-    int baudRate = 38400; // Replace with your desired baud rate
+    int baudRate = 230400; // Replace with your desired baud rate
 
     if (driver.openPort(port, baudRate)) {
         std::cout << "Port opened successfully." << std::endl;
@@ -24,6 +24,12 @@ int main(int argc, char** argv) {
             std::cout << "Current Alarm: " << std::hex << status.current_alarm << std::dec << std::endl;
             std::cout << "encoder difference: " << status.encoder_difference << std::endl;
             
+            DeviceStatus device_status = driver.parseDeviceStatusOne(status.device_status_one);
+            std::cout << "is home pose: " << device_status.is_home_pose << std::endl;
+            std::cout << "is servo on: " << device_status.is_servo_on << std::endl;
+            std::cout << "is break : " << device_status.is_break << std::endl;
+            std::cout << "is_emergency: " << device_status.is_emergency << std::endl;
+
             query_message = driver.createDisableAlarmMessage();
             response_size = query_message.size();
             response_message = std::vector<uint8_t>(response_size, 0);
@@ -48,13 +54,27 @@ int main(int argc, char** argv) {
             }
 
             usleep(3000000);
-            query_message = driver.createGoHomeMessage();
+
+            if(!device_status.is_home_pose){
+                std::cout << "Device is not in home pose, going home." << std::endl;
+                query_message = driver.createGoHomeMessage();
+                response_size = query_message.size();
+                response_message = std::vector<uint8_t>(response_size, 0);
+                if (driver.sendMessage(query_message, response_message, response_size)){
+                    std::cout << "Going Home." << std::endl;
+                }
+                usleep(10000000);
+            } else {
+                std::cout << "Device is already in home pose." << std::endl;
+            }
+            
+
+            query_message = driver.createMotorMoveMessage(300.0, 0.1, 50.0, 0.3);
             response_size = query_message.size();
             response_message = std::vector<uint8_t>(response_size, 0);
             if (driver.sendMessage(query_message, response_message, response_size)){
                 std::cout << "Going Home." << std::endl;
             }
-
             usleep(10000000);
 
             query_message = driver.createMotorMoveMessage(200.0, 0.1, 50.0, 0.3);
@@ -70,20 +90,6 @@ int main(int argc, char** argv) {
                 std::cout << "Moving the motor." << std::endl;
             }
             usleep(10000000);
-        
-            /*
-            query_message = driver.createServoOffMessage();
-            response_size = query_message.size();
-
-
-            
-            response_message = std::vector<uint8_t>(response_size, 0);
-            if (driver.sendMessage(query_message, response_message, response_size)){
-                std::cout << "Disabled the servo." << std::endl;
-            }
-            usleep(1000000);
-            
-            */
 
         } else {
             std::cerr << "Failed to send message." << std::endl;
