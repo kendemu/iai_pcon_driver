@@ -251,21 +251,27 @@ std::vector<uint8_t> PconDriver::createMotorMoveMessage(float pos_mm, float step
     message[5] = NUM_OF_REGISTERS; // number of registers
     message[6] = NUM_OF_REGISTERS * 2; // number of bytes
 
-    uint16_t target_position = static_cast<uint16_t>(pos_mm * 100);
-    message[9] = static_cast<uint8_t>(target_position >> 8); // target position MSB
-    message[10] = static_cast<uint8_t>(target_position & 0x00FF); // target position LSB
+    uint32_t target_position = static_cast<uint32_t>(pos_mm * 100);
+    message[7] = static_cast<uint8_t>((target_position >> 24) & 0xFF);   // target position MSB (Reg 9900) (4bytes) [xx 00 00 00]
+    message[8] = static_cast<uint8_t>((target_position >> 16) & 0xFF);   // [00 xx 00 00]
+    message[9] = static_cast<uint8_t>((target_position >> 8) & 0xFF);    // [00 00 xx 00]
+    message[10] = static_cast<uint8_t>(target_position & 0xFF);          // [00 00 00 xx]
 
-    uint16_t step_size = static_cast<uint16_t>(step_pos_mm * 100);
-    message[13] = static_cast<uint8_t>(step_size >> 8); // target position MSB
-    message[14] = static_cast<uint8_t>(step_size & 0x00FF); // target position LSB
+    uint32_t step_size = static_cast<uint32_t>(step_pos_mm * 100);
+    message[11] = static_cast<uint8_t>((step_size >> 24) & 0xFF);        // step size MSB (Reg 9902) (4bytes) [xx 00 00 00]
+    message[12] = static_cast<uint8_t>((step_size >> 16) & 0xFF);        // [00 xx 00 00]
+    message[13] = static_cast<uint8_t>((step_size >> 8) & 0xFF);         // [00 00 xx 00]
+    message[14] = static_cast<uint8_t>(step_size & 0xFF);                // [00 00 00 xx]
 
-    uint16_t target_speed = static_cast<uint16_t>(speed_mm_s * 100);
-    message[17] = static_cast<uint8_t>(target_speed >> 8); // target speed MSB
-    message[18] = static_cast<uint8_t>(target_speed & 0x00FF); // target speed LSB
+    uint32_t target_speed = static_cast<uint32_t>(speed_mm_s * 100);
+    message[15] = static_cast<uint8_t>((target_speed >> 24) & 0xFF);     // target_speed MSB (Reg 9904) (4bytes) [xx 00 00 00]
+    message[16] = static_cast<uint8_t>((target_speed >> 16) & 0xFF);     // [00 xx 00 00]
+    message[17] = static_cast<uint8_t>((target_speed >> 8) & 0xFF);      // [00 00 xx 00]
+    message[18] = static_cast<uint8_t>(target_speed & 0xFF);             // [00 00 00 xx]
 
     uint16_t target_g = static_cast<uint16_t>(acc_g * 100);
-    message[19] = static_cast<uint8_t>(target_g >> 8); // target g MSB
-    message[20] = static_cast<uint8_t>(target_g & 0x00FF); // target g LSB
+    message[19] = static_cast<uint8_t>(target_g >> 8);                   // target g MSB (Reg 9906) (2bytes) [xx 00]
+    message[20] = static_cast<uint8_t>(target_g & 0x00FF);               // target g LSB [00 xx]
 
     unsigned short crc = calculateCRC(message, MESSAGE_SIZE - 2);
     message[21] = crc & 0x00FF;        // CRC LSB
