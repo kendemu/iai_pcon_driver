@@ -251,9 +251,11 @@ std::vector<uint8_t> PconDriver::createMotorMoveMessage(float pos_mm, float step
     message[5] = NUM_OF_REGISTERS; // number of registers
     message[6] = NUM_OF_REGISTERS * 2; // number of bytes
 
-    uint16_t target_position = static_cast<uint16_t>(pos_mm * 100);
-    message[9] = static_cast<uint8_t>(target_position >> 8); // target position MSB
-    message[10] = static_cast<uint8_t>(target_position & 0x00FF); // target position LSB
+    uint32_t target_position = static_cast<uint32_t>(pos_mm * 100);
+    message[7] = static_cast<uint8_t>((target_position >> 24) & 0xFF);   // target position MSB (Reg 9900) [xx 00 00 00]
+    message[8] = static_cast<uint8_t>((target_position >> 16) & 0xFF);   // [00 xx 00 00]
+    message[9] = static_cast<uint8_t>((target_position >> 8) & 0xFF);    // [00 00 xx 00]
+    message[10] = static_cast<uint8_t>(target_position & 0xFF);          // [00 00 00 xx]
 
     uint16_t step_size = static_cast<uint16_t>(step_pos_mm * 100);
     message[13] = static_cast<uint8_t>(step_size >> 8); // target position MSB
