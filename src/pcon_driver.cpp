@@ -380,11 +380,21 @@ void PconDriver::parseMessage(const std::vector<uint8_t>& response, PconStatus& 
                                  (static_cast<uint32_t>(response[DATA_START_INDEX + 19]));
     status.system_status = system_status_raw;
 
-    uint16_t speed_raw = (static_cast<uint16_t>(response[DATA_START_INDEX + 20]) << 8) | response[DATA_START_INDEX + 21];
-    status.current_speed = static_cast<float>(static_cast<int16_t>(speed_raw)) / 100.0f; // Convert from 1/100mm/s to mm/s
+    uint32_t speed_raw = (static_cast<uint32_t>(response[DATA_START_INDEX + 20]) << 24) | 
+                         (static_cast<uint32_t>(response[DATA_START_INDEX + 21]) << 16) |
+                         (static_cast<uint32_t>(response[DATA_START_INDEX + 22]) << 8) |
+                         (static_cast<uint32_t>(response[DATA_START_INDEX + 23]));
+    status.current_speed = static_cast<float>(static_cast<int32_t>(speed_raw)) / 100.0f; // Convert from 1/100mm/s to mm/s
 
-    uint16_t current_raw = (static_cast<uint16_t>(response[DATA_START_INDEX + 22]) << 8) | response[DATA_START_INDEX + 23];
-    status.current_load = static_cast<float>(current_raw) / 1000.0f; // Convert from mA to A
+    uint32_t current_raw = (static_cast<uint32_t>(response[DATA_START_INDEX + 24]) << 24) | 
+                           (static_cast<uint32_t>(response[DATA_START_INDEX + 25]) << 16) |
+                           (static_cast<uint32_t>(response[DATA_START_INDEX + 26]) << 8) |
+                           (static_cast<uint32_t>(response[DATA_START_INDEX + 27]));
+    status.current_load = static_cast<float>(static_cast<int32_t>(current_raw)) / 1000.0f; // Convert from mA to A
 
-    status.encoder_difference = (static_cast<uint16_t>(response[DATA_START_INDEX + 24]) << 8) | response[DATA_START_INDEX + 25];
+    uint32_t encoder_diff_raw = (static_cast<uint32_t>(response[DATA_START_INDEX + 28]) << 24) |
+                                (static_cast<uint32_t>(response[DATA_START_INDEX + 29]) << 16) |
+                                (static_cast<uint32_t>(response[DATA_START_INDEX + 30]) << 8) |
+                                (static_cast<uint32_t>(response[DATA_START_INDEX + 31]));
+    status.encoder_difference = static_cast<int32_t>(encoder_diff_raw);
 }
