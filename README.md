@@ -31,3 +31,9 @@ baudrate (float), default 230400
 speed_mms (float), default 50.0mm/s  : speed  
 acceleration_g(float), default 0.3G  : acceleration 
 publish_rate_hz(float), default 50Hz  
+
+### Publish
+```bash
+# Move to 500mm
+ros2 topic pub --once /target_pose std_msgs/msg/Float64 "{data: 500.0}"
+```
