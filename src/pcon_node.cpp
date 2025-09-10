@@ -1,6 +1,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
 #include "std_msgs/msg/float64.hpp"
+#include "std_msgs/msg/float64_multi_array.hpp"
 #include "iai_pcon_driver/pcon_driver.hpp"
 
 #include <chrono>
@@ -44,11 +45,14 @@ public:
         initialize();
 
         // Create publisher for joint state
-        joint_state_publisher_ = this->create_publisher<sensor_msgs::msg::JointState>("joint_states", 10);
+        joint_state_publisher_ = this->create_publisher<sensor_msgs::msg::JointState>("pcon_driver/joint_states", 10);
 
         // Create subscriber for target pose
         target_pose_subscriber_ = this->create_subscription<std_msgs::msg::Float64>(
             "target_pose", 10, std::bind(&PconROS2Driver::targetPoseCallback, this, std::placeholders::_1));
+
+        target_pos_vel_acc_subscriber_ = this->create_subscription<std_msgs::msg::Float64MultiArray>(
+            "target_pos_vel_acc", 10, std::bind(&PconROS2Driver::targetPosVelAccCallback, this, std::placeholders::_1));
 
         // Create a timer to periodically read status and publish
         
@@ -125,7 +129,6 @@ private:
         }
     }
 
-
     void targetPoseCallback(const std_msgs::msg::Float64::SharedPtr msg)
     {
         float target_pos = static_cast<float>(msg->data);
@@ -138,6 +141,37 @@ private:
             step_position_mm_,
             speed_mms_,
             acceleration_g_
+        );
+
+        // For a write command, the response is typically small (8 bytes)
+        std::vector<uint8_t> response;
+        int expected_response_size = 8;
+
+        if (!driver_->sendMessage(move_message, response, expected_response_size)) {
+            RCLCPP_WARN(this->get_logger(), "Failed to send move command or get valid response.");
+        } else {
+            RCLCPP_INFO(this->get_logger(), "Successfully sent move command.");
+        }
+    }
+
+    void targetPosVelAccCallback(const std_msgs::msg::Float64MultiArray::SharedPtr msg)
+    {
+        if (msg->data.size() != 3) {
+            RCLCPP_WARN(this->get_logger(), "Received target_pos_vel_acc message with insufficient data. Need 3 elements (pos[mm], vel[mm/s], acc[G]).");
+            return;
+        }
+
+        float target_pos = static_cast<float>(msg->data[0]);
+        float target_vel = static_cast<float>(msg->data[1]);
+        float target_acc = static_cast<float>(msg->data[2]);
+
+        RCLCPP_INFO(this->get_logger(), "Received target pos: %.2f mm, step: %.2f, vel: %.2f mm/s, acc: %.2f G ", target_pos, step_position_mm_, target_vel, target_acc);
+
+        std::vector<uint8_t> move_message = driver_->createMotorMoveMessage(
+            target_pos,
+            step_position_mm_,
+            target_vel,
+            target_acc
         );
 
         // For a write command, the response is typically small (8 bytes)
@@ -180,6 +214,7 @@ private:
     // ROS 2 components
     rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_state_publisher_;
     rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr target_pose_subscriber_;
+    rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr target_pos_vel_acc_subscriber_;
     rclcpp::TimerBase::SharedPtr publish_timer_;
 
     // Driver and parameters
