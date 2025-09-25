@@ -199,7 +199,7 @@ private:
             // Create and publish the JointState message
             auto joint_state_msg = std::make_unique<sensor_msgs::msg::JointState>();
             joint_state_msg->header.stamp = this->get_clock()->now();
-            joint_state_msg->name.push_back("linear_actuator_joint");
+            joint_state_msg->name.push_back("robo_cylinder_joint");
             joint_state_msg->position.push_back(status.current_position / 1000.0); // Convert mm to meters
             joint_state_msg->velocity.push_back(status.current_speed / 1000.0);   // Convert mm/s to m/s
 
